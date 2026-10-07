@@ -1,0 +1,224 @@
+@startuml FireEyes_ERD
+
+title FireEyes - Thiet ke co so du lieu - Schema v1
+
+top to bottom direction
+hide circle
+skinparam linetype ortho
+skinparam shadowing false
+skinparam entity {
+    BackgroundColor #F8FAFC
+    BorderColor #334155
+    FontColor #0F172A
+}
+
+entity "locations" as locations {
+    * id : INTEGER <<PK>>
+    --
+    * name : TEXT <<UQ>>
+    * address : TEXT
+}
+
+entity "cameras" as cameras {
+    * id : INTEGER <<PK>>
+    --
+    * location_id : INTEGER <<FK>>
+    * name : TEXT
+    * source_ref : TEXT
+    * enabled : INTEGER
+}
+
+entity "contacts" as contacts {
+    * id : INTEGER <<PK>>
+    --
+    * location_id : INTEGER <<FK>>
+    * name : TEXT
+    * destination : TEXT
+    * channel : TEXT
+}
+
+entity "dataset_versions" as dataset_versions {
+    * id : INTEGER <<PK>>
+    --
+    * name : TEXT
+    * version : TEXT
+    * source_url : TEXT
+    * license_name : TEXT
+    * class_map : TEXT
+    manifest_sha256 : TEXT
+    * status : TEXT
+}
+
+entity "dataset_samples" as dataset_samples {
+    * id : INTEGER <<PK>>
+    --
+    * dataset_id : INTEGER <<FK>>
+    * image_path : TEXT
+    * label_path : TEXT
+    * sha256 : TEXT
+    * split : TEXT
+    * source_group : TEXT
+}
+
+entity "annotations" as annotations {
+    * id : INTEGER <<PK>>
+    --
+    * sample_id : INTEGER <<FK>>
+    * class_id : INTEGER
+    * xc : REAL
+    * yc : REAL
+    * w : REAL
+    * h : REAL
+}
+
+entity "model_versions" as model_versions {
+    * id : INTEGER <<PK>>
+    --
+    * name : TEXT <<UQ>>
+    dataset_id : INTEGER <<FK>>
+    weights_path : TEXT
+    weights_sha256 : TEXT
+    * class_map : TEXT
+    * is_demo : INTEGER
+}
+
+entity "frames" as frames {
+    * id : INTEGER <<PK>>
+    --
+    * camera_id : INTEGER <<FK>>
+    * model_id : INTEGER <<FK>>
+    * request_id : TEXT
+    * payload_sha256 : TEXT
+    * captured_at : TEXT
+    snapshot_path : TEXT
+}
+
+entity "detections" as detections {
+    * id : INTEGER <<PK>>
+    --
+    * frame_id : INTEGER <<FK>>
+    * class_id : INTEGER
+    * confidence : REAL
+    * xc : REAL
+    * yc : REAL
+    * w : REAL
+    * h : REAL
+}
+
+entity "incidents" as incidents {
+    * id : INTEGER <<PK>>
+    --
+    * camera_id : INTEGER <<FK>>
+    * trigger_detection_id : INTEGER <<FK>>
+    * started_at : TEXT
+    * status : TEXT
+    * rule_description : TEXT
+    closed_at : TEXT
+    resolution_note : TEXT
+}
+
+entity "notifications" as notifications {
+    * id : INTEGER <<PK>>
+    --
+    * incident_id : INTEGER <<FK>>
+    * contact_id : INTEGER <<FK>>
+    * channel : TEXT
+    * destination : TEXT
+    * status : TEXT
+    * attempted_at : TEXT
+    provider_message_id : TEXT
+    error_message : TEXT
+}
+
+locations ||--o{ cameras : location_id
+locations ||--o{ contacts : location_id
+
+dataset_versions ||--o{ dataset_samples : dataset_id
+dataset_samples ||--o{ annotations : sample_id
+dataset_versions |o--o{ model_versions : dataset_id
+
+cameras ||--o{ frames : camera_id
+model_versions ||--o{ frames : model_id
+frames ||--o{ detections : frame_id
+
+cameras ||--o{ incidents : camera_id
+detections ||--o{ incidents : trigger_detection_id
+
+incidents ||--o{ notifications : incident_id
+contacts ||--o{ notifications : contact_id
+
+note right of cameras
+    UNIQUE(location_id, name)
+    enabled IN (0, 1)
+end note
+
+note right of contacts
+    UNIQUE(location_id, destination, channel)
+    channel: sms, call, email, console
+end note
+
+note left of dataset_versions
+    UNIQUE(name, version)
+    status: planned, verified
+end note
+
+note left of dataset_samples
+    UNIQUE(dataset_id, image_path)
+    UNIQUE(dataset_id, sha256)
+    split: train, val, test
+    Trigger: cung source_group
+    phai cung split trong dataset.
+end note
+
+note right of model_versions
+    Model that (is_demo = 0):
+    dataset_id, weights_path,
+    weights_sha256 bat buoc.
+    Hash trong so dai 64 ky tu.
+end note
+
+note right of frames
+    UNIQUE(camera_id, request_id)
+    Python kiem tra payload khi retry
+    va chuan hoa captured_at ve UTC.
+end note
+
+note left of annotations
+    class_id: 0 = smoke, 1 = fire
+    Bbox chuan hoa, w > 0, h > 0,
+    nam trong bien anh.
+end note
+
+note right of detections
+    class_id: 0 = smoke, 1 = fire
+    confidence tu 0 den 1.
+    Bbox chuan hoa, w > 0, h > 0,
+    nam trong bien anh.
+end note
+
+note left of incidents
+    Toi da 1 incident open / camera.
+    status: open, resolved, false_alarm.
+    open: closed_at IS NULL.
+    Da dong: closed_at IS NOT NULL.
+    Trigger kiem tra camera cua bang chung
+    khi them/sua lien ket tren incident.
+end note
+
+note right of notifications
+    UNIQUE(incident_id, contact_id)
+    status: pending, sent, failed, simulated.
+    Python kiem tra nguoi nhan
+    cung dia diem khi ghi gia lap.
+end note
+
+legend bottom
+    PK = Primary Key
+    FK = Foreign Key
+    UQ = UNIQUE tren mot cot
+    * = Thuoc tinh bat buoc
+    Cac UNIQUE nhieu cot duoc ghi trong note.
+    Rang buoc chi tiet: CSDL/models/schema.sql
+endlegend
+
+@enduml
