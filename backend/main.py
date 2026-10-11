@@ -2,7 +2,7 @@ import argparse
 import json
 from pathlib import Path
 
-from CSDL.models.database import FireEyesDB
+from backend.CSDL.models.database import FireEyesDB
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -78,7 +78,7 @@ def main():
     db.initialize()
 
     if args.command == "init":
-        print("Schema v1 ready:", db.path)
+        print("Schema v2 ready:", db.path)
         return
 
     if args.command == "demo":

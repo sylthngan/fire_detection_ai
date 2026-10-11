@@ -1,0 +1,190 @@
+
+
+    git clone https://github.com/sylthngan/fire_detection_ai.git
+    cd fire_detection_ai
+
+1. Tao va cai dat moi truong Python (venv)
+
+macOS / Linux:
+
+    python3.12 -m venv .venv
+    source .venv/bin/activate
+    python -m pip install --upgrade pip
+    python -m pip install --upgrade -r requirements.txt
+
+Windows PowerShell:
+
+    py -3.12 -m venv .venv
+    .\.venv\Scripts\Activate.ps1
+    python -m pip install --upgrade pip
+    python -m pip install --upgrade -r requirements.txt
+
+Neu PowerShell chan kich hoat script, co the chay lenh sau trong cua so
+PowerShell hien tai roi kich hoat lai:
+
+    Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+    .\.venv\Scripts\Activate.ps1
+
+Kiem tra Python dang dung nam trong .venv:
+
+    python --version
+    python -m pip --version
+
+Su dung Python 3.12 cho moi lenh tren; khong cai package bang Python Anaconda
+base. Trên macOS, sau khi activate, `python --version` phai la 3.12.x va
+`python -m pip --version` phai hien duong dan nam trong project/.venv. Neu pip
+bao khong tim thay torch, kiem tra lai hai lenh nay va cai dependencies trong
+.venv, khong chay pip truoc khi activate.
+
+Moi lan mo Terminal moi, di chuyen vao thu muc project va kich hoat lai venv.
+Thoat venv bang lenh:
+
+    deactivate
+
+Neu may dung NVIDIA GPU, cai requirements truoc. Sau do cai/re-cai PyTorch
+phu hop voi phien ban CUDA cua may theo huong dan tai
+https://pytorch.org/get-started/locally/ va kiem tra lai PyTorch, Ultralytics.
+
+2. dataset D-Fire 
+
+    fire_detection_ai/
+      D-Fire/
+        train/
+          images/
+          labels/
+        test/
+          images/
+          labels/
+
+-> tạo thư mục valid:
+cd ../fire_detection_ai
+mkdir -p D-Fire/valid/images
+mkdir -p D-Fire/valid/labels
+echo "Created validation folders:"
+find D-Fire -type d
+
+rồi : python split_dataset.py
+
+
+
+Kiểm tra data.yaml
+    names:
+      0: Fire
+      1: Smoke
+
+File data.yaml :
+
+    path: .
+    train: train/images
+    val: valid/images
+    test: test/images
+    names:
+      0: Fire
+      1: Smoke
+
+3. Cài 
+    python -c "from ultralytics import YOLO; YOLO('yolo11n.pt')"
+    Và cài các yêu cầu theo requirement.txt
+
+
+Sau đó:     python -m training.train
+
+Tuy chinh so epoch, kich thuoc anh, batch va thiet bi:
+
+    python -m training.train --model yolo11n.pt --data D-Fire/data.yaml --epochs 100 --image-size 640 --batch 8 --device cpu
+
+Neu may co NVIDIA GPU va PyTorch/CUDA da san sang, co the dung --device 0.
+Giam batch hoac image-size neu may het bo nho. Ket qua thuong nam tai:
+
+    runs/detect/fire_ai/weights/best.pt
+
+
+6. 
+Hieu chinh confidence threshold bang tap validation:
+
+    python -m training.calibrate_thresholds --model runs/detect/fire_ai/weights/best.pt --data D-Fire/data.yaml
+
+Danh gia tren tap test (can file detection_thresholds.json vua tao):
+
+    python -m training.evaluate --model runs/detect/fire_ai/weights/best.pt --data D-Fire/data.yaml
+
+Bao cao va bieu do duoc tao trong thu muc runs/ va cung duoc Git bo qua.
+
+7. BACKEND PERSON 2: KET NOI SQL VA TIEP NHAN KET QUA AI
+
+Backend dung SQLite (CSDL SQL nam trong file), Python da co san sqlite3 nen
+khong can cai MySQL/PostgreSQL, user/password hay mo dich vu database rieng.
+Schema tu khoi tao lan dau trong backend/data/fireeyes.db; .gitignore bo qua
+file database nay, khong push DB/dataset/weights len Git.
+
+Tu thu muc goc fire_detection_ai, kich hoat .venv, cai requirements.txt neu
+chua cai, sau do khoi tao schema:
+
+    python -m backend.main init
+
+Khoi dong API trong mot Terminal va de cua so nay chay:
+
+    python -m uvicorn backend.api:app --host 127.0.0.1 --port 8000
+
+Mo Swagger UI de thao tac API: http://127.0.0.1:8000/docs
+Health check: http://127.0.0.1:8000/health
+
+Tren Swagger, dang ky theo thu tu de tao ID that:
+1. POST /api/locations voi ten va dia chi; ghi lai id tra ve.
+2. POST /api/cameras voi location_id, ten camera, source_ref an toan.
+   Khong gui mat khau camera/RTSP trong source_ref.
+3. POST /api/datasets voi name, version, source_url, license_name va
+   class_map goc da xac minh, vi du {"0":"fire","1":"smoke"}.
+4. POST /api/models voi dataset_id, ten model, weights_path va hash SHA-256.
+   Tren macOS chay:
+
+    shasum -a 256 runs/detect/fire_ai/weights/best.pt
+
+   Tren Windows PowerShell:
+
+    (Get-FileHash runs/detect/fire_ai/weights/best.pt -Algorithm SHA256).Hash
+
+Luu lai ID camera va model. Khi Fire/Smoke duoc AI xac nhan qua nhieu frame,
+detection.webcam gui POST /api/frames voi cac ID nay, request_id duy nhat theo
+camera, timestamp co timezone, detections va confirmed_classes. Toa do box
+phai chuan hoa 0..1. Backend luu box va mo incident de app doc.
+
+Mapping can chuyen truoc khi gui: D-Fire/YOLO la 0=Fire, 1=Smoke; CSDL
+FireEyes la 0=smoke, 1=fire. Chuyen theo ten class, khong gui nguyen class ID
+YOLO. Gui lai cung request_id va cung payload thi khong ghi trung; dung cung
+request_id voi payload khac tra HTTP 409; payload sai tra HTTP 422.
+
+Chay AI o Terminal thu hai sau khi da tao camera/model that:
+
+    python -m detection.webcam --source 0 --model models/best.pt --backend-camera-id ID_CAMERA --backend-model-id ID_MODEL
+
+Thay ID_CAMERA/ID_MODEL bang ID tu API; dung --source path/to/video.mp4 de thu
+video. Neu khong truyen ca hai ID backend, AI chi ghi ket qua local va khong
+gui backend. Khi dang doc frame, AI gui heartbeat moi 15 giay. App co the poll:
+
+    GET http://127.0.0.1:8000/api/alerts
+    GET http://127.0.0.1:8000/api/alerts/latest
+    GET http://127.0.0.1:8000/api/detections/history
+    GET http://127.0.0.1:8000/api/cameras/ID_CAMERA/status
+
+Danh dau da xem alert:
+
+    PATCH http://127.0.0.1:8000/api/alerts/ID_ALERT/acknowledge
+    JSON body: {"acknowledged_by": "Operator"}
+
+Tai anh bang chung:
+
+    GET http://127.0.0.1:8000/api/alerts/ID_ALERT/snapshot
+
+Ket thuc xu ly alert sau khi da xem/xac minh:
+
+    PATCH http://127.0.0.1:8000/api/alerts/ID_ALERT/resolve
+    JSON body: {"status": "resolved", "note": "Da xu ly xong"}
+
+status nhan "resolved" hoac "false_alarm"; can co note giai thich.
+Camera duoc xem la active neu backend nhan heartbeat trong 45 giay gan nhat;
+neu bi tat trong backend thi status la stopped; qua han heartbeat thi
+disconnected. API chi phuc vu anh trong output/screenshots tren cung may va
+chua co frontend hay WebSocket. Du lieu gia lap tu python -m backend.main demo chi de test, khong dung
+cho ket qua that. Backend chua gui SMS/cuoc goi/email va chua co xac thuc; chi
+bind localhost 127.0.0.1, khong mo ra mang cong cong.

@@ -1,4 +1,4 @@
--- FireEyes schema v1. All application timestamps are UTC ISO 8601.
+-- FireEyes schema v2. All application timestamps are UTC ISO 8601.
 PRAGMA foreign_keys = ON;
 BEGIN;
 CREATE TABLE IF NOT EXISTS locations (
@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS cameras (
  id INTEGER PRIMARY KEY, location_id INTEGER NOT NULL REFERENCES locations(id),
  name TEXT NOT NULL, source_ref TEXT NOT NULL,
  enabled INTEGER NOT NULL DEFAULT 1 CHECK(enabled IN (0,1)),
+ last_seen_at TEXT,
  UNIQUE(location_id, name)
 );
 -- source_ref is a video path or environment-variable name, not an RTSP password.
@@ -81,6 +82,7 @@ CREATE TABLE IF NOT EXISTS incidents (
  status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open','resolved','false_alarm')),
  rule_description TEXT NOT NULL,
  closed_at TEXT, resolution_note TEXT,
+ acknowledged_at TEXT, acknowledged_by TEXT,
  CHECK((status='open' AND closed_at IS NULL)
    OR (status<>'open' AND closed_at IS NOT NULL))
 );
@@ -102,5 +104,5 @@ CREATE TABLE IF NOT EXISTS notifications (
  attempted_at TEXT NOT NULL, provider_message_id TEXT, error_message TEXT,
  UNIQUE(incident_id, contact_id)
 );
-PRAGMA user_version = 1;
+PRAGMA user_version = 2;
 COMMIT;

@@ -3,7 +3,7 @@ from pathlib import Path
 import sqlite3
 import tempfile
 import unittest
-from CSDL.models.database import FireEyesDB
+from backend.CSDL.models.database import FireEyesDB
 
 
 class DatabaseTests(unittest.TestCase):
@@ -28,6 +28,27 @@ class DatabaseTests(unittest.TestCase):
         self.assertEqual(self.ids, db.seed_demo())
         self.assertEqual(db.counts()['frames'], 1)
         self.assertEqual(db.counts()['cameras'], 1)
+
+    def test_migrates_schema_v1_status_and_acknowledgement_columns(self):
+        with closing(self.db.connect()) as con, con:
+            con.execute('ALTER TABLE cameras DROP COLUMN last_seen_at')
+            con.execute('ALTER TABLE incidents DROP COLUMN acknowledged_at')
+            con.execute('ALTER TABLE incidents DROP COLUMN acknowledged_by')
+            con.execute('PRAGMA user_version = 1')
+
+        self.db.initialize()
+
+        with closing(self.db.connect()) as con:
+            camera_columns = {
+                row['name'] for row in con.execute('PRAGMA table_info(cameras)')
+            }
+            incident_columns = {
+                row['name'] for row in con.execute('PRAGMA table_info(incidents)')
+            }
+            self.assertIn('last_seen_at', camera_columns)
+            self.assertIn('acknowledged_at', incident_columns)
+            self.assertIn('acknowledged_by', incident_columns)
+            self.assertEqual(con.execute('PRAGMA user_version').fetchone()[0], 2)
 
     def test_duplicate_request_and_conflicting_retry(self):
         self.assertEqual(self.record(), self.record())

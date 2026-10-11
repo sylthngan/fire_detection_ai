@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+data/
+datasets/
+weights/
+runs/
+*.db
+*.db-wal
+*.db-shm
