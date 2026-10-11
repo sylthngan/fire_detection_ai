@@ -1,0 +1,182 @@
+HUONG DAN DU AN FIRE DETECTION AI
+================================
+
+1. Tong quan
+------------
+Du an phat hien Fire va Smoke bang YOLO, dung dataset D-Fire.
+
+- training/train.py: huan luyen model.
+- training/calibrate_thresholds.py: hieu chinh nguong theo tap validation.
+- training/evaluate.py: danh gia model tren tap test.
+- detection/: xu ly webcam, video va logic xac nhan phat hien.
+- backend/, services/: API va luu ket qua phat hien.
+
+2. Clone ma nguon
+-----------------
+Can cai Git va Python 3.10 tro len. Mo Terminal (macOS/Linux) hoac
+PowerShell (Windows), chon thu muc muon luu project, sau do chay:
+
+    git clone https://github.com/sylthngan/fire_detection_ai.git
+    cd fire_detection_ai
+
+3. Tao va cai dat moi truong Python (venv)
+------------------------------------------
+Moi may chi can tao venv rieng; KHONG copy hoac push thu muc venv len Git.
+
+macOS / Linux:
+
+    python3 -m venv .venv
+    source .venv/bin/activate
+    python -m pip install --upgrade pip
+    python -m pip install -r requirements.txt
+
+Windows PowerShell:
+
+    py -m venv .venv
+    .\.venv\Scripts\Activate.ps1
+    python -m pip install --upgrade pip
+    python -m pip install -r requirements.txt
+
+Neu PowerShell chan kich hoat script, co the chay lenh sau trong cua so
+PowerShell hien tai roi kich hoat lai:
+
+    Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+    .\.venv\Scripts\Activate.ps1
+
+Kiem tra Python dang dung nam trong .venv:
+
+    python --version
+    python -m pip --version
+
+Moi lan mo Terminal moi, di chuyen vao thu muc project va kich hoat lai venv.
+Thoat venv bang lenh:
+
+    deactivate
+
+Neu may dung NVIDIA GPU, cai requirements truoc. Sau do cai/re-cai PyTorch
+phu hop voi phien ban CUDA cua may theo huong dan tai
+https://pytorch.org/get-started/locally/ va kiem tra lai PyTorch, Ultralytics.
+
+4. Chuan bi dataset D-Fire (khong dua dataset len Git)
+------------------------------------------------------
+Tai va giai nen dataset D-Fire rieng tren may cua ban, theo dieu khoan su dung
+cua nguon dataset. Dat thu muc ten D-Fire ngay tai thu muc goc cua project:
+
+    fire_detection_ai/
+      D-Fire/
+        data.yaml
+        train/
+          images/
+          labels/
+        valid/
+          images/
+          labels/
+        test/
+          images/
+          labels/
+
+Moi anh can co file nhan YOLO .txt cung ten trong thu muc labels tuong ung
+(vi du train/images/abc.jpg va train/labels/abc.txt). Dataset phai co cac lop
+Fire va Smoke, theo thu tu ID trong data.yaml:
+
+    names:
+      0: Fire
+      1: Smoke
+
+File data.yaml trong dataset hien tai co duong dan tuyet doi cua may tao file.
+Tren may khac, sua dong path thanh duong dan tuong doi:
+
+    path: .
+    train: train/images
+    val: valid/images
+    test: test/images
+    names:
+      0: Fire
+      1: Smoke
+
+Vi data.yaml nam ben trong D-Fire, path: . se tro den chinh thu muc D-Fire.
+Dataset, nhan va file data.yaml rieng nam trong D-Fire/ se duoc Git bo qua.
+Khong dat dataset ben ngoai thu muc D-Fire/ neu muon dung lenh mac dinh.
+
+5. Chuan bi weights va huan luyen
+---------------------------------
+Script mac dinh can file weights yolo11n.pt tai thu muc goc project. Tu venv,
+va tai thu muc goc project, chay lenh sau mot lan de Ultralytics tai weights:
+
+    python -c "from ultralytics import YOLO; YOLO('yolo11n.pt')"
+
+Dam bao file yolo11n.pt da xuat hien o thu muc goc. Weights model (*.pt) duoc
+Git bo qua, khong push len GitHub.
+
+Huan luyen nhanh voi cau hinh mac dinh:
+
+    python -m training.train
+
+Tuy chinh so epoch, kich thuoc anh, batch va thiet bi:
+
+    python -m training.train --model yolo11n.pt --data D-Fire/data.yaml --epochs 100 --image-size 640 --batch 8 --device cpu
+
+Neu may co NVIDIA GPU va PyTorch/CUDA da san sang, co the dung --device 0.
+Giam batch hoac image-size neu may het bo nho. Ket qua thuong nam tai:
+
+    runs/detect/fire_ai/weights/best.pt
+
+Thu muc runs/ va cac weights *.pt khong duoc push. Hay sao luu model qua kho
+luu tru rieng neu can chia se; khong dung git add -f de vuot quy tac ignore.
+
+6. Hieu chinh va danh gia
+-------------------------
+Hieu chinh confidence threshold bang tap validation:
+
+    python -m training.calibrate_thresholds --model runs/detect/fire_ai/weights/best.pt --data D-Fire/data.yaml
+
+Danh gia tren tap test (can file detection_thresholds.json vua tao):
+
+    python -m training.evaluate --model runs/detect/fire_ai/weights/best.pt --data D-Fire/data.yaml
+
+Bao cao va bieu do duoc tao trong thu muc runs/ va cung duoc Git bo qua.
+
+7. Kiem tra va day ma nguon len GitHub
+--------------------------------------
+Repo da co .gitignore bo qua .venv/, venv/, env/, D-Fire/, dataset/,
+datasets/, runs/, output/ va weights model. Quy tac ignore chi ngan cac file
+chua duoc Git theo doi; no khong tu bo theo doi file da commit tu truoc.
+
+Truoc khi commit/push, chay cac lenh sau tai thu muc goc:
+
+    git status --short
+    git check-ignore -v .venv D-Fire yolo11n.pt
+    git ls-files D-Fire .venv venv
+
+Lenh git check-ignore phai hien quy tac ignore cho cac duong dan tren. Lenh
+git ls-files khong nen liet ke dataset hoac noi dung venv. Them cac file ma
+nguon va tai lieu, khong them dataset/venv:
+
+    git add .
+    git status --short
+    git diff --cached --name-only
+    git diff --cached --stat
+
+Doc danh sach staged va chac chan khong co D-Fire/, .venv/, venv/, dataset,
+weights (*.pt) hoac file rieng tu truoc khi tiep tuc. Neu dataset/venv bi stage
+nham nhung chua commit, bo khoi Git index ma KHONG xoa file tren may bang lenh:
+
+    git rm -r --cached --ignore-unmatch -- D-Fire .venv venv env dataset datasets
+
+Sau do kiem tra lai git status va git diff --cached --name-only. Khong dung
+git add -f cho dataset, venv hoac weights. Neu cac file nay da tung duoc commit,
+.gitignore khong xoa chung khoi lich su Git; can xu ly rieng va khong push lai
+lich su chua dataset.
+
+Khi danh sach staged chi con ma nguon/tai lieu can chia se:
+
+    git commit -m "Add fire detection training project"
+    git push -u origin HEAD
+
+Neu Git bao chua cau hinh danh tinh, cau hinh ten/email truoc:
+
+    git config --global user.name "Ten cua ban"
+    git config --global user.email "email-cua-ban"
+
+Chi commit va push cac file can chia se. Khong upload dataset D-Fire va venv len
+GitHub; moi thanh vien tu tai dataset va tu tao moi truong theo cac buoc tren.

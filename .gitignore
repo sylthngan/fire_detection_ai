@@ -1,0 +1,32 @@
+    # Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Dataset
+D-Fire/
+dataset/
+datasets/
+
+# YOLO results
+runs/
+output/
+
+# Model weights
+*.pt
+*.pth
+*.onnx
+*.h5
+*.pkl
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
