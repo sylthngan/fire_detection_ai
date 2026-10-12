@@ -50,6 +50,20 @@ class BackendAPITests(unittest.TestCase):
         self.assertEqual(stats["frames"], 0)
         self.assertEqual(stats["detections"], 0)
 
+    def test_dashboard_and_assets_are_served(self):
+        dashboard = self.client.get("/")
+
+        self.assertEqual(dashboard.status_code, 200)
+        self.assertIn("FireEyes", dashboard.text)
+        self.assertEqual(
+            self.client.get("/app.js").status_code,
+            200,
+        )
+        self.assertEqual(
+            self.client.get("/styles.css").status_code,
+            200,
+        )
+
     def test_ingests_frame_and_detections(self):
         response = self.client.post("/api/frames", json=self.payload())
 

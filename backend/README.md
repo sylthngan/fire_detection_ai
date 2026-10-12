@@ -42,7 +42,25 @@ hay dịch vụ CSDL riêng.
 python -m uvicorn backend.api:app --host 127.0.0.1 --port 8000
 ```
 
-Giữ cửa sổ terminal này mở. Mở <http://127.0.0.1:8000/docs> để xem và thử API.
+Giữ cửa sổ terminal này mở. Mở <http://127.0.0.1:8000/> để dùng dashboard,
+hoặc <http://127.0.0.1:8000/docs> để xem và thử API. Dashboard phục vụ cùng
+FastAPI origin, tự làm mới dữ liệu mỗi 5 giây và không cần cài thêm package
+frontend. Có thể bật dữ liệu giả lập để thử các luồng popup/acknowledge/resolve:
+<http://127.0.0.1:8000/?demo=1>. Dữ liệu demo chỉ nằm trong trình duyệt và
+không ghi vào SQLite/backend thật.
+
+Trên dashboard thật, bấm **Thêm camera** để đăng ký tên camera và chọn nhà/vị
+trí đã có, hoặc tạo nhà/vị trí mới kèm địa chỉ. Thao tác này ghi vào SQLite
+qua `POST /api/locations` và `POST /api/cameras`; ở chế độ demo, dữ liệu chỉ
+tồn tại trong phiên trình duyệt và sẽ mất khi tải lại trang. Đăng ký camera
+chỉ lưu metadata, không tự mở webcam hay kết nối luồng RTSP. `source_ref` là
+nhãn nội bộ; không đưa mật khẩu hoặc URL RTSP có thông tin đăng nhập vào đó.
+
+Để thử âm thanh, bấm **Bật âm thanh** một lần sau khi mở trang; trình duyệt
+chặn phát âm thanh tự động trước thao tác người dùng. Popup âm thanh chỉ phát
+khi backend ghi nhận một alert mới trong lúc dashboard đang mở; alert cũ vẫn
+hiện trong danh sách nhưng không phát lại mỗi lần polling.
+
 Các endpoint:
 
 | Method | Endpoint | Chức năng |

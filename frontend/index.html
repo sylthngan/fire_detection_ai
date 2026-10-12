@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0c1118">
+    <title>FireEyes — Giám sát an toàn</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="/" aria-label="FireEyes trang chủ">
+          <span class="brand-mark" aria-hidden="true"><span></span></span>
+          <span class="brand-copy"><strong>fireeyes</strong><small>FIRE SAFETY SYSTEM</small></span>
+        </a>
+
+        <div class="side-label">KHÔNG GIAN CHUNG</div>
+        <nav class="side-nav" aria-label="Điều hướng chính">
+          <button class="nav-link active" data-view="dashboard" type="button">
+            <span class="nav-icon" aria-hidden="true">◫</span> Tổng quan
+          </button>
+          <button class="nav-link" data-view="history" type="button">
+            <span class="nav-icon" aria-hidden="true">◷</span> Lịch sử sự kiện
+          </button>
+        </nav>
+
+        <div class="sidebar-spacer"></div>
+        <div class="sidebar-status">
+          <span class="status-orb" id="sidebar-orb"></span>
+          <span id="sidebar-updated">Đang tải dữ liệu…</span>
+          <button class="icon-button small" id="refresh-button" type="button" aria-label="Làm mới dữ liệu" title="Làm mới">↻</button>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <div class="breadcrumb"><span>FireEyes</span><span class="crumb-slash">/</span><strong id="page-name">Tổng quan</strong></div>
+          <div class="topbar-actions">
+            <button class="button button-quiet" id="sound-toggle" type="button" aria-pressed="false">
+              <span aria-hidden="true">♫</span><span id="sound-label">Bật thông báo</span>
+            </button>
+            <div class="user-avatar" title="Người vận hành">NV</div>
+          </div>
+        </header>
+
+        <div class="page-wrap">
+          <section class="view-section active" id="dashboard-view">
+            <div class="page-heading">
+              <div>
+                <div class="eyebrow">HỆ THỐNG GIÁM SÁT · <span id="today-label"></span></div>
+                <h1>Trung tâm điều hành</h1>
+                <p class="subtitle">Theo dõi camera và cảnh báo cháy.</p>
+              </div>
+              <div class="system-state" id="system-state">
+                <span class="system-state-dot"></span><span id="system-state-label">Đang tải trạng thái</span>
+              </div>
+            </div>
+
+            <div class="metrics-grid">
+              <article class="metric-card">
+                <div class="metric-top"><span class="metric-icon icon-cameras">▣</span><span class="metric-caption">THIẾT BỊ</span></div>
+                <div class="metric-value" id="metric-cameras">—</div>
+                <div class="metric-foot"><span id="metric-cameras-foot">Camera đang hoạt động</span><span class="metric-arrow">↗</span></div>
+              </article>
+              <article class="metric-card">
+                <div class="metric-top"><span class="metric-icon icon-fire">♨</span><span class="metric-caption">CẢNH BÁO LỬA</span></div>
+                <div class="metric-value" id="metric-fire">0</div>
+                <div class="metric-foot"><span>Sự kiện chưa xử lý</span><span class="metric-dot dot-fire"></span></div>
+              </article>
+              <article class="metric-card">
+                <div class="metric-top"><span class="metric-icon icon-smoke">◌</span><span class="metric-caption">CẢNH BÁO KHÓI</span></div>
+                <div class="metric-value" id="metric-smoke">0</div>
+                <div class="metric-foot"><span>Sự kiện chưa xử lý</span><span class="metric-dot dot-smoke"></span></div>
+              </article>
+              <article class="metric-card">
+                <div class="metric-top"><span class="metric-icon icon-history">◷</span><span class="metric-caption">TỔNG SỰ KIỆN</span></div>
+                <div class="metric-value" id="metric-events">0</div>
+                <div class="metric-foot"><span>Lịch sử phát hiện</span><span class="metric-arrow">↗</span></div>
+              </article>
+            </div>
+
+            <div class="content-grid">
+              <section class="panel camera-panel">
+                <div class="panel-heading">
+                  <div><div class="panel-title">Camera trực tuyến <span class="count-pill" id="camera-count">0</span></div><div class="panel-subtitle">Tình trạng kết nối và phát hiện hiện tại</div></div>
+                  <div class="camera-panel-actions">
+                    <button class="button button-outline add-camera-button" id="add-camera-button" type="button">＋ Thêm camera</button>
+                  </div>
+                </div>
+                <div class="camera-grid" id="camera-grid">
+                  <div class="empty-state">Đang tải danh sách camera…</div>
+                </div>
+              </section>
+
+              <section class="panel alerts-panel">
+                <div class="panel-heading">
+                  <div><div class="panel-title">Cảnh báo gần đây <span class="count-pill count-alert" id="alert-count">0</span></div><div class="panel-subtitle">Sự kiện cần theo dõi</div></div>
+                  <button class="text-button" data-view="history" type="button">Xem lịch sử <span>→</span></button>
+                </div>
+                <div class="alert-list" id="alert-list"><div class="empty-state">Đang tải cảnh báo…</div></div>
+              </section>
+            </div>
+
+            <section class="panel recent-panel">
+              <div class="panel-heading">
+                <div><div class="panel-title">Phát hiện mới nhất</div><div class="panel-subtitle">Các kết quả AI gần đây</div></div>
+                <button class="text-button" data-view="history" type="button">Tất cả lịch sử <span>→</span></button>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>LOẠI</th><th>CAMERA</th><th>VỊ TRÍ</th><th>ĐỘ TIN CẬY</th><th>THỜI GIAN</th></tr></thead>
+                  <tbody id="recent-body"><tr><td colspan="5" class="table-empty">Đang tải dữ liệu…</td></tr></tbody>
+                </table>
+              </div>
+            </section>
+          </section>
+
+          <section class="view-section" id="history-view">
+            <div class="page-heading history-heading">
+              <div><div class="eyebrow">THEO DÕI & ĐỐI SOÁT</div><h1>Lịch sử sự kiện</h1><p class="subtitle">Tra cứu cảnh báo, trạng thái xử lý và các lần phát hiện.</p></div>
+              <div class="history-total"><strong id="history-total">0</strong><span>bản ghi gần nhất</span></div>
+            </div>
+            <section class="panel history-panel">
+              <div class="history-tabs" role="tablist" aria-label="Loại lịch sử">
+                <button class="history-tab active" data-history-tab="alerts" type="button">Cảnh báo <span id="history-alert-count">0</span></button>
+                <button class="history-tab" data-history-tab="detections" type="button">Phát hiện AI <span id="history-detection-count">0</span></button>
+              </div>
+              <div class="filter-row">
+                <label class="search-field"><span aria-hidden="true">⌕</span><input id="history-search" type="search" placeholder="Tìm camera, vị trí…" autocomplete="off"></label>
+                <select id="camera-filter" aria-label="Lọc theo camera"><option value="">Tất cả camera</option></select>
+                <select id="alert-filter" aria-label="Lọc trạng thái cảnh báo"><option value="all">Tất cả trạng thái</option><option value="open">Đang mở</option><option value="unacknowledged">Chưa xác nhận</option><option value="closed">Đã xử lý</option></select>
+                <select id="class-filter" aria-label="Lọc loại phát hiện"><option value="all">Tất cả loại</option><option value="fire">Lửa</option><option value="smoke">Khói</option></select>
+              </div>
+              <div class="table-wrap history-table-wrap">
+                <table>
+                  <thead id="history-head"></thead>
+                  <tbody id="history-body"></tbody>
+                </table>
+              </div>
+              <div class="history-foot"><span id="history-showing">Hiển thị 0 bản ghi</span><span>API giới hạn 100 bản ghi gần nhất</span></div>
+            </section>
+          </section>
+          <footer class="page-footer"><span>FireEyes <span class="footer-separator">/</span> AI Fire Detection</span><span>Dữ liệu được làm mới mỗi 5 giây</span></footer>
+        </div>
+      </main>
+    </div>
+
+    <dialog class="detail-dialog" id="detail-dialog">
+      <div class="dialog-header"><div><div class="eyebrow">CHI TIẾT SỰ KIỆN</div><h2 id="detail-title">Cảnh báo</h2></div><button class="icon-button dialog-close" data-close-dialog="detail-dialog" type="button" aria-label="Đóng">×</button></div>
+      <div id="detail-content"></div>
+      <div class="dialog-actions" id="detail-actions"></div>
+    </dialog>
+
+    <dialog class="incoming-dialog" id="incoming-dialog">
+      <div class="incoming-flash"></div>
+      <div class="incoming-inner"><div class="incoming-icon" id="incoming-icon">!</div><div class="eyebrow">CẢNH BÁO MỚI · FIREEYES</div><h2 id="incoming-title">Phát hiện lửa</h2><p id="incoming-description"></p><div class="incoming-actions"><button class="button button-danger" id="incoming-detail" type="button">Xem chi tiết</button><button class="button button-outline-light" id="incoming-dismiss" type="button">Để sau</button></div></div>
+    </dialog>
+
+    <dialog class="form-dialog" id="ack-dialog">
+      <form id="ack-form" method="dialog">
+        <div class="dialog-header"><div><div class="eyebrow">XÁC NHẬN TIẾP NHẬN</div><h2>Đã xem cảnh báo?</h2></div><button class="icon-button dialog-close" data-close-dialog="ack-dialog" type="button" aria-label="Đóng">×</button></div>
+        <p class="dialog-copy">Tên người xác nhận sẽ được lưu cùng thời điểm tiếp nhận.</p>
+        <label class="form-label" for="operator-name">Người xác nhận</label><input class="form-input" id="operator-name" name="operator" maxlength="100" required>
+        <div class="dialog-actions"><button class="button button-outline" data-close-dialog="ack-dialog" type="button">Hủy</button><button class="button button-primary" type="submit">Xác nhận đã xem</button></div>
+      </form>
+    </dialog>
+
+    <dialog class="form-dialog" id="resolve-dialog">
+      <form id="resolve-form" method="dialog">
+        <div class="dialog-header"><div><div class="eyebrow">CẬP NHẬT TRẠNG THÁI</div><h2>Xử lý cảnh báo</h2></div><button class="icon-button dialog-close" data-close-dialog="resolve-dialog" type="button" aria-label="Đóng">×</button></div>
+        <label class="form-label" for="resolve-status">Kết quả</label><select class="form-input" id="resolve-status"><option value="resolved">Đã xử lý</option><option value="false_alarm">Cảnh báo sai</option></select>
+        <label class="form-label" for="resolve-note">Ghi chú xử lý</label><textarea class="form-input" id="resolve-note" rows="3" maxlength="1000" required placeholder="Nhập ghi chú ngắn…"></textarea>
+        <div class="dialog-actions"><button class="button button-outline" data-close-dialog="resolve-dialog" type="button">Hủy</button><button class="button button-primary" type="submit">Lưu kết quả</button></div>
+      </form>
+    </dialog>
+
+    <dialog class="form-dialog" id="camera-dialog">
+      <form id="camera-form">
+        <div class="dialog-header"><div><div class="eyebrow">QUẢN LÝ THIẾT BỊ</div><h2>Thêm camera</h2></div><button class="icon-button dialog-close" data-close-dialog="camera-dialog" type="button" aria-label="Đóng">×</button></div>
+        <p class="dialog-copy">Đăng ký camera trong Backend để xuất hiện trên dashboard. Đăng ký thiết bị không tự kết nối luồng hình ảnh.</p>
+        <label class="form-label" for="camera-name">Tên camera</label>
+        <input class="form-input" id="camera-name" name="camera_name" maxlength="200" required placeholder="Ví dụ: Camera phòng khách">
+        <label class="form-label" for="camera-location">Nhà / vị trí</label>
+        <select class="form-input" id="camera-location" name="location_id" required></select>
+        <div id="new-location-fields" hidden>
+          <label class="form-label" for="location-name">Tên nhà / vị trí mới</label>
+          <input class="form-input" id="location-name" name="location_name" maxlength="200" placeholder="Ví dụ: Nhà riêng">
+          <label class="form-label" for="location-address">Địa chỉ</label>
+          <input class="form-input" id="location-address" name="location_address" maxlength="500" placeholder="Địa chỉ hoặc mô tả vị trí">
+        </div>
+        <label class="form-label" for="camera-source">Nguồn camera (nhãn nội bộ)</label>
+        <input class="form-input" id="camera-source" name="source_ref" maxlength="500" required value="camera-index:0">
+        <p class="field-hint">Không nhập mật khẩu hoặc URL RTSP có thông tin đăng nhập vào trường này.</p>
+        <div class="dialog-actions"><button class="button button-outline" data-close-dialog="camera-dialog" type="button">Hủy</button><button class="button button-primary" id="save-camera-button" type="submit">Lưu camera</button></div>
+      </form>
+    </dialog>
+
+    <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+  </body>
+</html>

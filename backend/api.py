@@ -14,6 +14,7 @@ from fastapi import (
     status,
 )
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from backend.CSDL.models.database import (
@@ -31,6 +32,7 @@ DEFAULT_SNAPSHOT_ROOT = (
     Path(__file__).resolve().parents[1] / "output" / "screenshots"
 )
 ALLOWED_SNAPSHOT_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp"}
+FRONTEND_ROOT = Path(__file__).resolve().parents[1] / "frontend"
 
 
 class DetectionBox(BaseModel):
@@ -570,6 +572,11 @@ def create_app(
             ) from error
         return result
 
+    app.mount(
+        "/",
+        StaticFiles(directory=FRONTEND_ROOT, html=True),
+        name="dashboard",
+    )
     return app
 
 

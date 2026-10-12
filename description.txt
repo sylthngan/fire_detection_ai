@@ -110,24 +110,7 @@ Danh gia tren tap test (can file detection_thresholds.json vua tao):
 
 Bao cao va bieu do duoc tao trong thu muc runs/ va cung duoc Git bo qua.
 
-7. BACKEND PERSON 2: KET NOI SQL VA TIEP NHAN KET QUA AI
-
-Backend dung SQLite (CSDL SQL nam trong file), Python da co san sqlite3 nen
-khong can cai MySQL/PostgreSQL, user/password hay mo dich vu database rieng.
-Schema tu khoi tao lan dau trong backend/data/fireeyes.db; .gitignore bo qua
-file database nay, khong push DB/dataset/weights len Git.
-
-Tu thu muc goc fire_detection_ai, kich hoat .venv, cai requirements.txt neu
-chua cai, sau do khoi tao schema:
-
-    python -m backend.main init
-
-Khoi dong API trong mot Terminal va de cua so nay chay:
-
-    python -m uvicorn backend.api:app --host 127.0.0.1 --port 8000
-
-Mo Swagger UI de thao tac API: http://127.0.0.1:8000/docs
-Health check: http://127.0.0.1:8000/health
+7. BACKEND : KET NOI SQL VA TIEP NHAN KET QUA AI
 
 Tren Swagger, dang ky theo thu tu de tao ID that:
 1. POST /api/locations voi ten va dia chi; ghi lai id tra ve.
@@ -138,53 +121,13 @@ Tren Swagger, dang ky theo thu tu de tao ID that:
 4. POST /api/models voi dataset_id, ten model, weights_path va hash SHA-256.
    Tren macOS chay:
 
-    shasum -a 256 runs/detect/fire_ai/weights/best.pt
+8. Frontend:
+Để built giao diện:
 
-   Tren Windows PowerShell:
+cd /Users/nguyenthuyngan/Downloads/fire_detection_ai
+source .venv/bin/activate
+python -m backend.main init
+python -m uvicorn backend.api:app --host 127.0.0.1 --port 8000
 
-    (Get-FileHash runs/detect/fire_ai/weights/best.pt -Algorithm SHA256).Hash
 
-Luu lai ID camera va model. Khi Fire/Smoke duoc AI xac nhan qua nhieu frame,
-detection.webcam gui POST /api/frames voi cac ID nay, request_id duy nhat theo
-camera, timestamp co timezone, detections va confirmed_classes. Toa do box
-phai chuan hoa 0..1. Backend luu box va mo incident de app doc.
 
-Mapping can chuyen truoc khi gui: D-Fire/YOLO la 0=Fire, 1=Smoke; CSDL
-FireEyes la 0=smoke, 1=fire. Chuyen theo ten class, khong gui nguyen class ID
-YOLO. Gui lai cung request_id va cung payload thi khong ghi trung; dung cung
-request_id voi payload khac tra HTTP 409; payload sai tra HTTP 422.
-
-Chay AI o Terminal thu hai sau khi da tao camera/model that:
-
-    python -m detection.webcam --source 0 --model models/best.pt --backend-camera-id ID_CAMERA --backend-model-id ID_MODEL
-
-Thay ID_CAMERA/ID_MODEL bang ID tu API; dung --source path/to/video.mp4 de thu
-video. Neu khong truyen ca hai ID backend, AI chi ghi ket qua local va khong
-gui backend. Khi dang doc frame, AI gui heartbeat moi 15 giay. App co the poll:
-
-    GET http://127.0.0.1:8000/api/alerts
-    GET http://127.0.0.1:8000/api/alerts/latest
-    GET http://127.0.0.1:8000/api/detections/history
-    GET http://127.0.0.1:8000/api/cameras/ID_CAMERA/status
-
-Danh dau da xem alert:
-
-    PATCH http://127.0.0.1:8000/api/alerts/ID_ALERT/acknowledge
-    JSON body: {"acknowledged_by": "Operator"}
-
-Tai anh bang chung:
-
-    GET http://127.0.0.1:8000/api/alerts/ID_ALERT/snapshot
-
-Ket thuc xu ly alert sau khi da xem/xac minh:
-
-    PATCH http://127.0.0.1:8000/api/alerts/ID_ALERT/resolve
-    JSON body: {"status": "resolved", "note": "Da xu ly xong"}
-
-status nhan "resolved" hoac "false_alarm"; can co note giai thich.
-Camera duoc xem la active neu backend nhan heartbeat trong 45 giay gan nhat;
-neu bi tat trong backend thi status la stopped; qua han heartbeat thi
-disconnected. API chi phuc vu anh trong output/screenshots tren cung may va
-chua co frontend hay WebSocket. Du lieu gia lap tu python -m backend.main demo chi de test, khong dung
-cho ket qua that. Backend chua gui SMS/cuoc goi/email va chua co xac thuc; chi
-bind localhost 127.0.0.1, khong mo ra mang cong cong.
