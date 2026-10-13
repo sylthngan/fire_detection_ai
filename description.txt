@@ -130,4 +130,45 @@ python -m backend.main init
 python -m uvicorn backend.api:app --host 127.0.0.1 --port 8000
 
 
+cd /Users/nguyenthuyngan/Downloads/fire_detection_ai
+source .venv/bin/activate
+python -m detection.test_camera
 
+http://127.0.0.1:8000/
+
+http://127.0.0.1:8000/docs
+
+
+python -m detection.webcam 
+  --source 0 
+  --model models/best.pt 
+  --backend-camera-id 1
+  --backend-model-id 2
+
+cd /Users/nguyenthuyngan/Downloads/fire_detection_ai
+source .venv/bin/activate
+python -m detection.webcam --source 0 --model models/best.pt --backend-camera-id 1 --backend-model-id 2
+
+
+post/api/models:
+{
+  "name": "",
+  "dataset_id": 1,
+  "weights_path": "models/best.pt",
+  "weights_sha256": "DÁN_SHA256_ĐÚNG_CỦA_FILE_MODELS_BEST_PT"
+}
+
+post/ api/dataset:
+{
+  "name": "D-Fire",
+  "version": "local-v1",
+  "source_url": "https://github.com/gaia-solutions-on-demand/DFireDataset",
+  "license_name": "Chưa xác minh",
+  "class_map": {
+    "0": "fire",
+    "1": "smoke"
+  }
+}
+
+  sha: 
+  c1ae73c02530542a86133d58e399b06492935cd953d6d40a7d95b9b3bc56ef59 
